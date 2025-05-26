@@ -51,6 +51,11 @@ async function QuizHomePage() {
         <div className="leaderboard section container">
           <LeaderBoard  />
         </div>
+
+        {/* Share Button Section */}
+        <div className="flex justify-center mt-8">
+          <ShareButton />
+        </div>
       </div>
     );
   }
