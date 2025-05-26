@@ -27,7 +27,7 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
   const [ansCorrect, setAnsCorrect] = useState(false);
   const [usedHint, setUsedHint] = useState(false);
   const [retried, setRetried] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30); // 30 seconds per question
+  const [timeLeft, setTimeLeft] = useState(15); // 15 seconds per question
   var quizer: quizeType = Quizes[questionNumber];
 
   // Timer effect
@@ -45,7 +45,7 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
 
   // Reset timer when moving to next question
   useEffect(() => {
-    setTimeLeft(30);
+    setTimeLeft(15); // Reset to 15 seconds
   }, [questionNumber]);
 
   const setDefault = () => {
@@ -163,7 +163,7 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
                   strokeWidth="4"
                   fill="none"
                   strokeDasharray="125.6"
-                  strokeDashoffset={125.6 - (timeLeft / 30) * 125.6}
+                  strokeDashoffset={125.6 - (timeLeft / 15) * 125.6}
                   className={`transition-all duration-1000 ${timeLeft <= 10 ? 'text-red-500' : 'text-blue-500'}`}
                 />
               </svg>
