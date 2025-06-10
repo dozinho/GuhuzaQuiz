@@ -26,16 +26,34 @@ const config: Config = {
           '80%': { transform: 'translateX(-5px)' },
           '90%': { transform: 'translateX(5px)' },
           '100%': { transform: 'translateX(0)' },
-
-        }
+        },
+        'scale-up': {
+          '0%': { transform: 'scale(0.8)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        'slide-up': {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'bounce-subtle': {
+          '0%, 100%': { transform: 'translateY(-5%)' },
+          '50%': { transform: 'translateY(0)' },
+        },
       },
       animation: {
-        shake: 'shake 6s ease-in-out ', // Adjust duration and timing function as needed
+        shake: 'shake 6s ease-in-out',
         'bounce-slow': 'bounce 2s infinite',
+        'scale-up': 'scale-up 0.5s ease-out forwards',
+        'slide-up': 'slide-up 0.5s ease-out forwards',
+        'fade-in': 'fade-in 0.5s ease-out forwards',
+        'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
       },
-
     },
   },
-  plugins: [require('tailwindcss-motion'), require('tailwindcss-intersect'), ],
+  plugins: [require('tailwindcss-motion'), require('tailwindcss-intersect')],
 };
 export default config;
