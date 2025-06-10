@@ -13,6 +13,7 @@ model level {
   Level_Title  String
   Level_number Int
   player       player[]
+  questions    Question[]
 }
 
 model milestone {
@@ -39,5 +40,18 @@ model player {
   
   @@index([Level_Id], map: "Player_Level_Id_fkey")
   @@index([Milestone_Id], map: "Player_Milestone_Id_fkey")
+}
+
+model Question {
+  id          Int      @id @default(autoincrement())
+  question    String   @db.Text
+  answers     Json     // Stores array of answer options
+  test_answer Int      // Index of correct answer
+  comment     String?  @db.Text
+  difficulty  Int      // 1-5 scale
+  Level_Id    Int
+  level       level    @relation(fields: [Level_Id], references: [Level_Id])
+  
+  @@index([Level_Id])
 }
 
