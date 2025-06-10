@@ -37,34 +37,63 @@ function getLevelConfig(levelNumber) {
   }
 }
 
-// Helper function to generate questions based on level
+// Helper function to generate diverse questions based on level
 function generateQuestionsForLevel(levelConfig) {
+  const topics = [
+    'History',
+    'Science',
+    'Geography',
+    'Mathematics',
+    'Literature',
+    'Technology',
+    'Sports',
+    'Arts',
+    'General Knowledge',
+    'Current Affairs'
+  ];
+
+  const questionTemplates = [
+    {
+      template: "What is the capital of {X}?",
+      answers: (x) => [
+        `${x} City`, 
+        `New ${x}`, 
+        `${x}ville`, 
+        `Port ${x}`
+      ]
+    },
+    {
+      template: "Who invented the {X}?",
+      answers: (x) => [
+        `Dr. ${x}`,
+        `Professor ${x}`,
+        `The ${x} Brothers`,
+        `${x} Industries`
+      ]
+    },
+    {
+      template: "Which year did {X} occur?",
+      answers: (x) => [
+        `${1900 + Math.floor(Math.random() * 120)}`,
+        `${1900 + Math.floor(Math.random() * 120)}`,
+        `${1900 + Math.floor(Math.random() * 120)}`,
+        `${1900 + Math.floor(Math.random() * 120)}`
+      ]
+    }
+  ];
+
   // Generate 10 questions for each level
   return Array.from({ length: 10 }, (_, index) => {
-    const questionNumber = index + 1;
-    const questionTypes = [
-      "What is the correct answer for",
-      "Choose the best option for",
-      "Which of these applies to",
-      "Select the most appropriate answer for",
-      "What would be the result of",
-      "Identify the correct solution for",
-      "Which statement is true about",
-      "What is the proper approach to",
-      "Determine the best answer for",
-      "What is the appropriate response to"
-    ];
+    const topic = topics[Math.floor(Math.random() * topics.length)];
+    const template = questionTemplates[Math.floor(Math.random() * questionTemplates.length)];
+    const question = template.template.replace('{X}', topic);
+    const answers = template.answers(topic);
 
     return {
-      question: `${questionTypes[index]} ${levelConfig.category} Question ${questionNumber}?`,
-      answers: JSON.stringify([
-        `The correct solution for Question ${questionNumber}`,
-        `Alternative option ${questionNumber}.1`,
-        `Alternative option ${questionNumber}.2`,
-        `Alternative option ${questionNumber}.3`
-      ]),
-      test_answer: 0, // Correct answer is always first
-      comment: `Explanation for ${levelConfig.category} Level Question ${questionNumber}`,
+      question,
+      answers: JSON.stringify(answers),
+      test_answer: 0,
+      comment: `This question tests your knowledge of ${topic.toLowerCase()}.`,
       difficulty: levelConfig.difficultyBase
     };
   });
