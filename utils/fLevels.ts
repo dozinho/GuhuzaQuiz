@@ -4,7 +4,7 @@ async function fetchLevels() {
     try {
         const levels = await prisma.level.findMany({ 
             orderBy : { 
-                Level_Id : 'desc'
+                Level_Id : 'asc'
             }
         });
         return levels

@@ -3,20 +3,14 @@ import fetchPlayers from "@/utils/fPlayers";
 import fetchRank from "@/utils/fRanking";
 import fetchUser from "@/utils/fUser";
 
-type leaderBoardType = {
-  player: number;
-  friends: Array<number>;
+type LevelCompletionType = {
+  id: number;
+  completionTime: number;
+  score: number;
+  completedAt: Date;
 };
 
-type milestoneType = {
-  Milestone_Id: number;
-  Milestone_Title: string;
-  Milestone_description: string;
-  UnlockingLevel: number;
-  UploadRequired: boolean;
-};
-
-type playerType = {
+type PlayerType = {
   Player_ID: number;
   Player_name: string;
   Playerpoint: number;
@@ -24,46 +18,67 @@ type playerType = {
   lastLogin: Date;
   Level_Id?: number;
   Milestone_Id?: number;
-  milestone: milestoneType;
+  bestTime?: number;
+  averageTime?: number;
+  totalQuizzes: number;
+  level?: {
+    Level_Title: string;
+    Level_number: number;
+  };
+  completions: LevelCompletionType[];
 };
 
-type PlayersType = { Players: playerType[] | [] };
+// Helper function to format time in mm:ss
+function formatTime(seconds: number | undefined | null): string {
+  if (!seconds) return '--:--';
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
 
 export default async function LeaderBoard() {
   const Players = (await fetchPlayers()) || [];
   const session = await auth();
- const user = session?.user;
-  const name = user?.firstName == null ? "Anonymous" :user?.firstName + " " + user?.lastName
+  const user = session?.user;
+  const name = user?.firstName == null ? "Anonymous" : user?.firstName + " " + user?.lastName;
 
   const player = session ? await fetchUser(
     Number(user?.memberId),
     name,
     user?.email || ""
-  ) : null
-  const playerId =session ?  player?.Player_ID : null ;
- const rank = player ?  await fetchRank(player.Playerpoint) : 100 
-  // Sort players by points in descending order
-  const sortedPlayers = [...Players]?.sort(
-    (a, b) => b?.Playerpoint - a?.Playerpoint
-  );
+  ) : null;
+  const playerId = session ? player?.Player_ID : null;
+  const rank = player ? await fetchRank(player.Playerpoint) : 100;
+
+  // Sort players by level first, then points, then average time
+  const sortedPlayers = [...Players]?.sort((a, b) => {
+    if (a.Level_Id !== b.Level_Id) {
+      return (b.Level_Id || 0) - (a.Level_Id || 0);
+    }
+    if (a.Playerpoint !== b.Playerpoint) {
+      return b.Playerpoint - a.Playerpoint;
+    }
+    return (a.averageTime || Infinity) - (b.averageTime || Infinity);
+  });
+
   // Get the top 5 players
   let topPlayers = sortedPlayers?.slice(0, 5);
-  // Check if the current player is in the top 5
   
+  // Check if the current player is in the top 5
   const isPlayerInTop5 = topPlayers?.some((p) => p?.Player_ID === playerId);
 
   // If the current player is not in the top 5, add them to the table
-  if (!isPlayerInTop5) {
+  if (!isPlayerInTop5 && playerId) {
     const currentPlayer = Players?.find((p) => p?.Player_ID === playerId);
     if (currentPlayer) {
-      topPlayers.push(currentPlayer); // Replace the 5th player with the current player
+      topPlayers.push(currentPlayer);
     }
   }
 
   return (
-    <div className=" py-24">
+    <div className="py-24">
       <div className="container">
-        <h2 className="px-4 py-1 text-center bg-blue-400 text-4xl w-fit rounded font-bold text-gray-900 m-auto intersect:motion-preset-slide-up motion-delay-200 intersect-once ">
+        <h2 className="px-4 py-1 text-center bg-blue-400 text-4xl w-fit rounded font-bold text-gray-900 m-auto intersect:motion-preset-slide-up motion-delay-200 intersect-once">
           LeaderBoard
         </h2>
       
@@ -75,36 +90,59 @@ export default async function LeaderBoard() {
         <table className="intersect:motion-preset-slide-up motion-delay-200 intersect-once min-w-full bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
           <thead className="bg-gradient-to-b from-gray-950 to-gray-800 text-white uppercase text-sm font-semibold">
             <tr>
-            <th className="px-6 py-3 text-left tracking-wider">Ranking</th>
-              <th className="px-6 py-3 text-left tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left tracking-wider">Points</th>
-              <th className="px-6 py-3 text-left tracking-wider">Level</th>
-             
+              <th className="px-4 py-3 text-left tracking-wider">Rank</th>
+              <th className="px-4 py-3 text-left tracking-wider">Name</th>
+              <th className="px-4 py-3 text-left tracking-wider">Level</th>
+              <th className="px-4 py-3 text-left tracking-wider">Points</th>
+              <th className="px-4 py-3 text-left tracking-wider">Current Level Best</th>
+              <th className="px-4 py-3 text-left tracking-wider">Overall Best</th>
+              <th className="px-4 py-3 text-left tracking-wider">Avg Time</th>
+              <th className="px-4 py-3 text-left tracking-wider">Total Quizzes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-300">
             {topPlayers.map((playerData, index) => {
               const isCurrentPlayer = playerData?.Player_ID === playerId;
-              const leaderBoardRank = isCurrentPlayer ? rank : index +1
-              const rowClass =
-                isCurrentPlayer && "bg-blue-100 font-semibold text-gray-900";
+              const leaderBoardRank = isCurrentPlayer ? rank : index + 1;
+              const rowClass = isCurrentPlayer ? "bg-blue-100 font-semibold text-gray-900" : "";
+
+              // Get best time for current level
+              const currentLevelBestTime = playerData.completions
+                ?.filter(c => c.Level_Id === playerData.Level_Id)
+                ?.reduce((best, current) => 
+                  Math.min(best, current.completionTime), 
+                  Infinity
+                );
 
               return (
                 <tr
                   key={playerData?.Player_ID}
-                  className={`${rowClass} transition-all`}
+                  className={`${rowClass} transition-all hover:bg-gray-50`}
                 >
-                  <td className="px-6 py-4 text-sm ">
+                  <td className="px-4 py-4 text-sm">
                     {leaderBoardRank}
                   </td>
-                  <td className="px-6 py-4 text-sm ">
+                  <td className="px-4 py-4 text-sm">
                     {playerData?.Player_name}
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-4 py-4 text-sm">
+                    {playerData?.level?.Level_Title || `Level ${playerData?.Level_Id || 1}`}
+                  </td>
+                  <td className="px-4 py-4 text-sm">
                     {playerData?.Playerpoint}
                   </td>
-                  <td className="px-6 py-4 text-sm">{playerData?.Level_Id}</td>
-                  
+                  <td className="px-4 py-4 text-sm font-mono">
+                    {formatTime(currentLevelBestTime === Infinity ? null : currentLevelBestTime)}
+                  </td>
+                  <td className="px-4 py-4 text-sm font-mono">
+                    {formatTime(playerData?.bestTime)}
+                  </td>
+                  <td className="px-4 py-4 text-sm font-mono">
+                    {formatTime(playerData?.averageTime)}
+                  </td>
+                  <td className="px-4 py-4 text-sm">
+                    {playerData?.totalQuizzes || 0}
+                  </td>
                 </tr>
               );
             })}

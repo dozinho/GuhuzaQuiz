@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `player` ADD COLUMN `averageTime` DOUBLE NULL DEFAULT 0,
+    ADD COLUMN `bestTime` INTEGER NULL DEFAULT 0,
+    ADD COLUMN `totalQuizzes` INTEGER NOT NULL DEFAULT 0;

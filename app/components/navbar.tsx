@@ -17,11 +17,13 @@ function Navbar() {
           </Link>
         </div>
 
-
         {/* Navigation Links (Desktop) */}
         <div className="hidden md:flex space-x-4">
           <Link href="/quiz">
             <span className="text-white hover:underline">Quiz</span>
+          </Link>
+          <Link href="/progress">
+            <span className="text-white hover:underline">Progress</span>
           </Link>
           <Link href="/">
             <span className="text-white hover:underline">Login</span>
@@ -92,6 +94,9 @@ function Navbar() {
           <div className="flex flex-col space-y-4 p-4 gap-8">
             <Link href="/quiz" className="w-full text-center">
               <span className="text-white hover:underline">Quiz</span>
+            </Link>
+            <Link href="/progress" className="w-full text-center">
+              <span className="text-white hover:underline">Progress</span>
             </Link>
             <Link href="/" className="w-full text-center">
               <span className="text-white hover:underline">Login</span>

@@ -1,4 +1,3 @@
-
 import prisma from "@/lib/prisma"
 
 type milestoneType = {
@@ -9,6 +8,12 @@ type milestoneType = {
     UploadRequired: boolean,
 }
 
+type levelType = {
+    Level_Id: number,
+    Level_Title: string,
+    Level_number: number,
+}
+
 type playerType = {
     Player_ID: number,
     Player_name: string,
@@ -17,24 +22,32 @@ type playerType = {
     lastLogin: Date,
     Level_Id?: number,
     Milestone_Id?: number,
+    bestTime?: number,
+    averageTime?: number,
+    totalQuizzes: number,
+    level?: levelType,
+    milestone?: milestoneType,
 }
 
 type Players = playerType[]
 
-
 async function fetchPlayers() {
     try {
-        const players = await prisma.player.findMany(
-            {
-                include: {
-                    milestone: true
-                }
-            }
-        );
-        return players as Players
-
+        const players = await prisma.player.findMany({
+            include: {
+                milestone: true,
+                level: true
+            },
+            orderBy: [
+                { Level_Id: 'desc' },
+                { Playerpoint: 'desc' },
+                { averageTime: 'asc' }
+            ]
+        });
+        return players as Players;
     } catch (e) {
-        console.error(e)
+        console.error(e);
+        return [];
     }
 }
 

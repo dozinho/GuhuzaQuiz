@@ -9,35 +9,69 @@ datasource db {
 }
 
 model level {
-  Level_Id     Int      @id @default(autoincrement())
-  Level_Title  String
-  Level_number Int
-  player       player[]
+  Level_Id      Int               @id @default(autoincrement())
+  Level_Title   String
+  Level_number  Int
+  player        player[]
+  questions     question[]
+  completions   LevelCompletion[]
+}
+
+model question {
+  Question_Id Int    @id @default(autoincrement())
+  question    String @db.Text
+  answers     String @db.Text
+  test_answer Int
+  comment     String @db.Text
+  difficulty  Int
+  Level_Id    Int
+  level       level  @relation(fields: [Level_Id], references: [Level_Id])
+
+  @@index([Level_Id])
 }
 
 model milestone {
-  Milestone_Id          Int      @id @default(autoincrement())
-  Milestone_Title       String
-  Milestone_description String
-  UnlockingLevel        Int
+  Milestone_Id              Int      @id @default(autoincrement())
+  Milestone_Title          String
+  Milestone_description    String
+  UnlockingLevel          Int
   Milestone_reward_message String
-  Milestone_Link String
-  Milestone_Button_CTA String
-  player                player[]
+  Milestone_Link          String
+  Milestone_Button_CTA    String
+  player                  player[]
 }
 
 model player {
-  Player_ID    Int        @id @default(autoincrement())
-  Player_name  String
-  Playerpoint  Int
-  streak       Int
-  lastLogin    DateTime
-  Level_Id     Int?
-  Milestone_Id Int?
-  level        level?     @relation(fields: [Level_Id], references: [Level_Id], map: "Player_Level_Id_fkey")
-  milestone    milestone? @relation(fields: [Milestone_Id], references: [Milestone_Id], map: "Player_Milestone_Id_fkey")
+  Player_ID      Int               @id @default(autoincrement())
+  Player_name    String
+  Playerpoint    Int
+  streak         Int
+  lastLogin      DateTime
+  Level_Id       Int?
+  Milestone_Id   Int?
+  bestTime       Int?              @default(0)  // Best overall completion time in seconds
+  averageTime    Float?            @default(0)  // Average overall completion time in seconds
+  totalQuizzes   Int               @default(0)  // Total number of quizzes completed
+  level          level?            @relation(fields: [Level_Id], references: [Level_Id], map: "Player_Level_Id_fkey")
+  milestone      milestone?        @relation(fields: [Milestone_Id], references: [Milestone_Id], map: "Player_Milestone_Id_fkey")
+  completions    LevelCompletion[]
   
   @@index([Level_Id], map: "Player_Level_Id_fkey")
   @@index([Milestone_Id], map: "Player_Milestone_Id_fkey")
+}
+
+model LevelCompletion {
+  id            Int      @id @default(autoincrement())
+  Player_Id     Int
+  Level_Id      Int
+  completionTime Int     // Time in seconds
+  score         Int
+  completedAt   DateTime @default(now())
+  player        player   @relation(fields: [Player_Id], references: [Player_ID])
+  level         level    @relation(fields: [Level_Id], references: [Level_Id])
+
+  @@index([Player_Id])
+  @@index([Level_Id])
+  @@unique([Player_Id, Level_Id, completedAt]) // Allow multiple attempts per level
 }
 
