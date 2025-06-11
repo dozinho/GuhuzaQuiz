@@ -50,20 +50,14 @@ export default async function LeaderBoard() {
   const playerId = session ? player?.Player_ID : null;
   const rank = player ? await fetchRank(player.Playerpoint) : 100;
 
-  // Sort players by level first, then points, then average time
-  const sortedPlayers = [...Players]?.sort((a, b) => {
-    if (a.Level_Id !== b.Level_Id) {
-      return (b.Level_Id || 0) - (a.Level_Id || 0);
+  // Sort players by points and level
+  const topPlayers = Players.sort((a, b) => {
+    if (b.Level_Id !== a.Level_Id) {
+      return b.Level_Id - a.Level_Id;
     }
-    if (a.Playerpoint !== b.Playerpoint) {
-      return b.Playerpoint - a.Playerpoint;
-    }
-    return (a.averageTime || Infinity) - (b.averageTime || Infinity);
+    return b.Playerpoint - a.Playerpoint;
   });
 
-  // Get the top 5 players
-  let topPlayers = sortedPlayers?.slice(0, 5);
-  
   // Check if the current player is in the top 5
   const isPlayerInTop5 = topPlayers?.some((p) => p?.Player_ID === playerId);
 
@@ -100,52 +94,61 @@ export default async function LeaderBoard() {
               <th className="px-4 py-3 text-left tracking-wider">Total Quizzes</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-300">
-            {topPlayers.map((playerData, index) => {
-              const isCurrentPlayer = playerData?.Player_ID === playerId;
-              const leaderBoardRank = isCurrentPlayer ? rank : index + 1;
-              const rowClass = isCurrentPlayer ? "bg-blue-100 font-semibold text-gray-900" : "";
+          <tbody>
+            {topPlayers.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-4 text-center text-gray-500">
+                  No players found
+                </td>
+              </tr>
+            ) : (
+              topPlayers.map((playerData, index) => {
+                const isCurrentPlayer = playerData?.Player_ID === playerId;
+                const leaderBoardRank = isCurrentPlayer ? rank : index + 1;
+                const rowClass = isCurrentPlayer ? "bg-blue-100 font-semibold text-gray-900" : "";
 
-              // Get best time for current level
-              const currentLevelBestTime = playerData.completions
-                ?.filter(c => c.Level_Id === playerData.Level_Id)
-                ?.reduce((best, current) => 
-                  Math.min(best, current.completionTime), 
-                  Infinity
+                // Get best time for current level
+                const currentLevelBestTime = playerData.completions
+                  ?.filter(c => c.Level_Id === playerData.Level_Id)
+                  ?.reduce((best, current) => 
+                    Math.min(best, current.completionTime), 
+                    Infinity
+                  );
+
+                return (
+                  <tr
+                    key={playerData?.Player_ID}
+                    className={`${rowClass} transition-all hover:bg-gray-50 ${
+                      index < 3 ? 'bg-gray-50' : ''
+                    }`}
+                  >
+                    <td className="px-4 py-4">
+                      <div className={`
+                        w-8 h-8 flex items-center justify-center rounded-full
+                        ${index === 0 ? 'bg-yellow-400 text-white' : ''}
+                        ${index === 1 ? 'bg-gray-400 text-white' : ''}
+                        ${index === 2 ? 'bg-amber-600 text-white' : ''}
+                      `}>
+                        {leaderBoardRank}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">{playerData?.Player_name}</td>
+                    <td className="px-4 py-4">
+                      <span className="px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                        Level {playerData?.Level_Id}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 font-semibold">{playerData?.Playerpoint}</td>
+                    <td className="px-4 py-4 font-mono">
+                      {formatTime(currentLevelBestTime === Infinity ? null : currentLevelBestTime)}
+                    </td>
+                    <td className="px-4 py-4 font-mono">{formatTime(playerData?.bestTime)}</td>
+                    <td className="px-4 py-4 font-mono">{formatTime(playerData?.averageTime)}</td>
+                    <td className="px-4 py-4">{playerData?.totalQuizzes || 0}</td>
+                  </tr>
                 );
-
-              return (
-                <tr
-                  key={playerData?.Player_ID}
-                  className={`${rowClass} transition-all hover:bg-gray-50`}
-                >
-                  <td className="px-4 py-4 text-sm">
-                    {leaderBoardRank}
-                  </td>
-                  <td className="px-4 py-4 text-sm">
-                    {playerData?.Player_name}
-                  </td>
-                  <td className="px-4 py-4 text-sm">
-                    {playerData?.level?.Level_Title || `Level ${playerData?.Level_Id || 1}`}
-                  </td>
-                  <td className="px-4 py-4 text-sm">
-                    {playerData?.Playerpoint}
-                  </td>
-                  <td className="px-4 py-4 text-sm font-mono">
-                    {formatTime(currentLevelBestTime === Infinity ? null : currentLevelBestTime)}
-                  </td>
-                  <td className="px-4 py-4 text-sm font-mono">
-                    {formatTime(playerData?.bestTime)}
-                  </td>
-                  <td className="px-4 py-4 text-sm font-mono">
-                    {formatTime(playerData?.averageTime)}
-                  </td>
-                  <td className="px-4 py-4 text-sm">
-                    {playerData?.totalQuizzes || 0}
-                  </td>
-                </tr>
-              );
-            })}
+              })
+            )}
           </tbody>
         </table>
       </div>

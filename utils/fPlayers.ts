@@ -14,6 +14,14 @@ type levelType = {
     Level_number: number,
 }
 
+type completionType = {
+    id: number,
+    completionTime: number,
+    score: number,
+    completedAt: Date,
+    Level_Id: number,
+}
+
 type playerType = {
     Player_ID: number,
     Player_name: string,
@@ -27,6 +35,7 @@ type playerType = {
     totalQuizzes: number,
     level?: levelType,
     milestone?: milestoneType,
+    completions?: completionType[],
 }
 
 type Players = playerType[]
@@ -36,7 +45,12 @@ async function fetchPlayers() {
         const players = await prisma.player.findMany({
             include: {
                 milestone: true,
-                level: true
+                level: true,
+                completions: {
+                    orderBy: {
+                        completedAt: 'desc'
+                    }
+                }
             },
             orderBy: [
                 { Level_Id: 'desc' },

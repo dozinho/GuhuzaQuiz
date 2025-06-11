@@ -27,7 +27,6 @@ export async function POST(req: Request) {
       where: { Player_ID: playerId },
       include: {
         completions: {
-          where: { Level_Id: levelId },
           orderBy: { completionTime: 'asc' }
         }
       }
@@ -41,12 +40,14 @@ export async function POST(req: Request) {
     }
 
     // Calculate new stats
-    const totalQuizzes = currentPlayer.totalQuizzes + 1;
-    const currentTotalTime = (currentPlayer.averageTime || 0) * currentPlayer.totalQuizzes;
+    const totalQuizzes = (currentPlayer.totalQuizzes || 0) + 1;
+    const currentTotalTime = (currentPlayer.averageTime || 0) * (currentPlayer.totalQuizzes || 0);
     const newAverageTime = (currentTotalTime + completionTime) / totalQuizzes;
     
-    // Get best time for this specific level
-    const bestLevelTime = currentPlayer.completions[0]?.completionTime;
+    // Get best time overall
+    const newBestTime = currentPlayer.bestTime === null || completionTime < currentPlayer.bestTime 
+      ? completionTime 
+      : currentPlayer.bestTime;
 
     // Update player stats
     const updatedPlayer = await prisma.player.update({
@@ -59,9 +60,7 @@ export async function POST(req: Request) {
         },
         totalQuizzes: totalQuizzes,
         averageTime: newAverageTime,
-        bestTime: currentPlayer.bestTime === null || completionTime < currentPlayer.bestTime 
-          ? completionTime 
-          : currentPlayer.bestTime,
+        bestTime: newBestTime,
         // Update level if this is their highest level
         Level_Id: currentPlayer.Level_Id && currentPlayer.Level_Id < levelId 
           ? levelId 
@@ -70,20 +69,15 @@ export async function POST(req: Request) {
       include: {
         level: true,
         completions: {
-          where: { Level_Id: levelId },
           orderBy: { completedAt: 'desc' },
-          take: 1
+          take: 5 // Get last 5 completions for stats
         }
       }
     });
 
     return NextResponse.json({
       player: updatedPlayer,
-      levelCompletion: {
-        ...levelCompletion,
-        bestTimeForLevel: bestLevelTime,
-        improvement: bestLevelTime ? bestLevelTime - completionTime : 0
-      }
+      levelCompletion: levelCompletion
     }, { status: 200 });
 
   } catch (error) {

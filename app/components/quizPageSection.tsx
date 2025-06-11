@@ -57,6 +57,7 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
   const [totalAnswers, setTotalAnswers] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [totalTime, setTotalTime] = useState(0);
 
   // Initialize audio elements
   useEffect(() => {
@@ -69,7 +70,8 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
     if (!answerChecked && timeLeft > 0 && timerStarted) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
-          setAnswerTime(15 - prev); // Track time taken to answer
+          const timeSpent = 15 - prev;
+          setAnswerTime(timeSpent); // Track time taken to answer
           if (prev > 1) {
             tickSoundRef.current?.play().catch(err => console.log('Error playing tick sound:', err));
           }
@@ -108,7 +110,7 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
   };
 
   const handleNextLevel = async () => {
-    if( !player.Playerpoint ) { 
+    if (!player.Playerpoint) { 
       setCookie("tempScore", score)
       router.push("/")
     } else { 
@@ -116,39 +118,47 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
       const finalScore = score + player?.Playerpoint
       const playerId = player?.Player_ID
       const newlevel = Math.max(player.Level_Id, nextLevel)
-     
+      
       try {
-        const response = await fetch("/api/updateScore", {
+        // First record the quiz completion
+        const completionResponse = await fetch("/api/quiz-completion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            playerId, 
+            levelId: Number(levelNumber),
+            score: score,
+            completionTime: totalTime // Send total time instead of average time
+          }),
+        });
+
+        if (!completionResponse.ok) {
+          throw new Error("Failed to record quiz completion");
+        }
+
+        // Then update the player's score
+        const scoreResponse = await fetch("/api/updateScore", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ playerId, finalScore, newlevel }),
         });
-  
-        if (response.ok) {
-          const data = await response.json();
-          console.log("User updated in successfully!", data);
-        
-         
+
+        if (scoreResponse.ok) {
+          const data = await scoreResponse.json();
+          console.log("Score updated successfully!", data);
           router.push(`/quiz/${newlevel}`)
-          console.log(data.newlevel)
-  
-  
-  
         } else {
-          const errorData = await response.json();
-          console.error("Login failed:", errorData.message);
-  
-  
+          const errorData = await scoreResponse.json();
+          console.error("Score update failed:", errorData.message);
         }
       } catch (error) {
-        console.error("An error occurred during login:", error);
-  
-  
+        console.error("An error occurred:", error);
       }
     }
-    
   }
 
  
@@ -202,7 +212,8 @@ export default function QuizPageSection({ Quizes, levelNumber, levelTitle, playe
       setCurrentStreak(0);
     }
 
-    // Update average time
+    // Update average time and total time
+    setTotalTime(prev => prev + answerTime);
     setAverageTime(prev => {
       const newAvg = prev === 0 ? answerTime : (prev + answerTime) / 2;
       return newAvg;
